@@ -533,6 +533,7 @@ function renderPublicaciones() {
   if (tipoSeleccionado)   pubs = pubs.filter(p => p.tipo_documento === tipoSeleccionado);
   if (fuenteSeleccionada === "scopus") pubs = pubs.filter(p => esBool(p.en_scopus));
   if (fuenteSeleccionada === "wos")    pubs = pubs.filter(p => esBool(p.en_wos));
+  if (fuenteSeleccionada === "scielo") pubs = pubs.filter(p => esBool(p.en_scielo));
   if (fuenteSeleccionada === "oa")     pubs = pubs.filter(p => (p.open_access||"").match(/gold|green/i));
 
   // Ordenar por año desc, luego citas desc
