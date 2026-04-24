@@ -40,7 +40,7 @@ body{font-family:'Poppins',sans-serif;color:var(--texto);background:var(--g100);
 /* ── HERO ── */
 .hero{
   background:var(--oscuro) url("assets/fondo_unh_opt.jpg") center center / cover no-repeat;
-  min-height:100vh;
+  min-height:62vh;
   padding:40px 24px;
   position:relative;
 }
@@ -219,7 +219,7 @@ body{font-family:'Poppins',sans-serif;color:var(--texto);background:var(--g100);
 @media(max-width:768px){
   .header-badge{display:none}
   .hero{background-image:url("assets/fondo_unh_mobile.jpg")}
-  .hero{padding:28px 20px 36px;min-height:100vh}
+  .hero{padding:28px 20px 36px;min-height:56vh}
   .hero-content{min-height:0}
   .hero-logo{width:120px;margin-bottom:14px}
   .hero-title{font-size:clamp(34px,10vw,50px);line-height:1.05}
