@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portal de Investigación — UNH</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="header-brand">
+        <div class="logo-slot">
+          <img src="logo.png" alt="UNH Logo" class="logo-img" onerror="this.style.display='none'">
+        </div>
+        <div class="header-titles">
+          <span class="header-sigla">UNH</span>
+          <span class="header-nombre">Universidad Nacional de Huancavelica</span>
+          <span class="header-sub">Vicerrectorado de Investigación</span>
+        </div>
+      </div>
+      <div class="header-badge">
+        <span class="badge-dot"></span>
+        <span>Actualización automática</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-bg">
+      <div class="hero-circle c1"></div>
+      <div class="hero-circle c2"></div>
+      <div class="hero-circle c3"></div>
+    </div>
+    <div class="hero-content">
+      <h1 class="hero-title">Portal de Producción<br><span class="hero-accent">Científica</span></h1>
+      <p class="hero-desc">Consulta las publicaciones científicas de los docentes de la Universidad Nacional de Huancavelica indexadas en Scopus, Web of Science, SciELO y otras bases de datos internacionales.</p>
+    </div>
+  </section>
+
+  <!-- MÉTRICAS -->
+  <section class="metricas" id="metricas">
+    <div class="container">
+      <div class="metricas-grid">
+        <div class="metrica-card" id="m-total">
+          <div class="metrica-num" id="total-pub">—</div>
+          <div class="metrica-label">Publicaciones totales</div>
+        </div>
+        <div class="metrica-card accent-blue" id="m-scopus">
+          <div class="metrica-num" id="total-scopus">—</div>
+          <div class="metrica-label">En Scopus</div>
+        </div>
+        <div class="metrica-card accent-dark" id="m-wos">
+          <div class="metrica-num" id="total-wos">—</div>
+          <div class="metrica-label">En Web of Science</div>
+        </div>
+        <div class="metrica-card accent-yellow" id="m-docentes">
+          <div class="metrica-num" id="total-docentes">—</div>
+          <div class="metrica-label">Docentes con publicaciones</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FILTROS Y TABLA -->
+  <section class="contenido" id="publicaciones">
+    <div class="container">
+
+      <div class="filtros-bar">
+        <div class="search-wrap">
+          <svg class="search-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="9" cy="9" r="6"/><path d="M15 15l3 3"/>
+          </svg>
+          <input type="text" id="buscar" placeholder="Buscar por título, docente, revista..." class="search-input">
+          <button class="search-clear" id="btn-clear" title="Limpiar">✕</button>
+        </div>
+        <div class="filtros-selects">
+          <select id="filtro-anio" class="filtro-select">
+            <option value="">Todos los años</option>
+          </select>
+          <select id="filtro-dept" class="filtro-select">
+            <option value="">Todos los departamentos</option>
+          </select>
+          <select id="filtro-fuente" class="filtro-select">
+            <option value="">Todas las fuentes</option>
+            <option value="scopus">Scopus</option>
+            <option value="wos">Web of Science</option>
+            <option value="openaccess">Acceso abierto</option>
+          </select>
+          <select id="filtro-tipo" class="filtro-select">
+            <option value="">Todos los tipos</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="resultados-info">
+        <span id="resultados-count">Cargando publicaciones...</span>
+        <button class="btn-exportar" id="btn-exportar">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+            <path d="M10 3v10M6 9l4 4 4-4"/><path d="M3 17h14"/>
+          </svg>
+          Exportar CSV
+        </button>
+      </div>
+
+      <!-- TABLA -->
+      <div class="tabla-wrap">
+        <div id="loading" class="loading-state">
+          <div class="spinner"></div>
+          <p>Cargando publicaciones...</p>
+        </div>
+        <div id="error-state" class="error-state" style="display:none">
+          <p>No se pudieron cargar los datos. Intenta nuevamente.</p>
+        </div>
+        <table class="tabla" id="tabla-pub" style="display:none">
+          <thead>
+            <tr>
+              <th class="th-sort" data-col="docente">Docente <span class="sort-icon">↕</span></th>
+              <th class="th-sort" data-col="titulo">Título <span class="sort-icon">↕</span></th>
+              <th class="th-sort" data-col="anio">Año <span class="sort-icon">↕</span></th>
+              <th>Revista</th>
+              <th>Tipo</th>
+              <th class="th-sort" data-col="citas">Citas <span class="sort-icon">↕</span></th>
+              <th>Índices</th>
+              <th>Enlace</th>
+            </tr>
+          </thead>
+          <tbody id="tabla-body"></tbody>
+        </table>
+      </div>
+
+      <!-- PAGINACIÓN -->
+      <div class="paginacion" id="paginacion"></div>
+
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-inner">
+        <div>
+          <strong>UNH</strong> — Vicerrectorado de Investigación
+          <br>
+          <small>Datos obtenidos de OpenAlex, Crossref, Scopus y Web of Science</small>
+        </div>
+        <div class="footer-links">
+          <a href="https://orcid.org" target="_blank">ORCID</a>
+          <a href="https://openalex.org" target="_blank">OpenAlex</a>
+          <a href="https://www.scopus.com" target="_blank">Scopus</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
