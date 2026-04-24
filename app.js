@@ -545,8 +545,8 @@ function iniciarConstelacionesHero() {
 
   function buildParticles() {
     const isMobile = window.innerWidth <= 768;
-    const count = isMobile ? 34 : 62;
-    const maxSpeed = isMobile ? 0.18 : 0.24;
+    const count = isMobile ? 52 : 96;
+    const maxSpeed = isMobile ? 0.16 : 0.22;
 
     particles = Array.from({ length: count }, () => ({
       x: Math.random() * width,
@@ -573,7 +573,7 @@ function iniciarConstelacionesHero() {
   function drawFrame() {
     ctx.clearRect(0, 0, width, height);
 
-    const lineDistance = window.innerWidth <= 768 ? 95 : 120;
+    const lineDistance = window.innerWidth <= 768 ? 120 : 150;
     const lineDistance2 = lineDistance * lineDistance;
 
     for (let i = 0; i < particles.length; i++) {
@@ -597,7 +597,7 @@ function iniciarConstelacionesHero() {
         const dist2 = dx * dx + dy * dy;
         if (dist2 < lineDistance2) {
           const alpha = 1 - dist2 / lineDistance2;
-          ctx.strokeStyle = `rgba(188, 220, 255, ${0.22 * alpha})`;
+          ctx.strokeStyle = `rgba(188, 220, 255, ${0.34 * alpha})`;
           ctx.lineWidth = 1;
           ctx.beginPath();
           ctx.moveTo(p.x, p.y);
@@ -608,7 +608,7 @@ function iniciarConstelacionesHero() {
     }
 
     for (const p of particles) {
-      ctx.fillStyle = "rgba(230, 244, 255, .65)";
+      ctx.fillStyle = "rgba(236, 247, 255, .9)";
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
       ctx.fill();
