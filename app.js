@@ -320,9 +320,24 @@ function volverAlInicio() {
   document.getElementById("estadoInicial").style.display = "block";
   document.getElementById("searchInput").value = "";
   document.getElementById("btnClear").classList.remove("visible");
-  const compararPanel = document.getElementById("compararPanel");
-  if (compararPanel) compararPanel.style.display = "none";
+  cerrarModalComparacion();
   window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function abrirModalComparacion() {
+  const panel = document.getElementById("compararPanel");
+  if (!panel) return;
+  panel.hidden = false;
+  panel.classList.add("visible");
+  document.body.style.overflow = "hidden";
+}
+
+function cerrarModalComparacion() {
+  const panel = document.getElementById("compararPanel");
+  if (!panel) return;
+  panel.classList.remove("visible");
+  panel.hidden = true;
+  document.body.style.overflow = "";
 }
 
 function configurarComparacion() {
@@ -336,19 +351,22 @@ function configurarComparacion() {
   if (!btnComparar || !btnCerrar || !btnAplicar || !panel || !lista || !input) return;
 
   btnComparar.addEventListener("click", () => {
-    const abrir = panel.style.display === "none" || panel.style.display === "";
-    if (abrir) {
-      const docentes = Object.keys(docentesMap).sort((a, b) => a.localeCompare(b));
-      lista.innerHTML = docentes.map(n => `<option value="${escapar(n)}"></option>`).join("");
-      panel.style.display = "block";
-      input.focus();
-      return;
-    }
-    panel.style.display = "none";
+    const docentes = Object.keys(docentesMap).sort((a, b) => a.localeCompare(b));
+    lista.innerHTML = docentes.map(n => `<option value="${escapar(n)}"></option>`).join("");
+    abrirModalComparacion();
+    input.focus();
   });
 
   btnCerrar.addEventListener("click", () => {
-    panel.style.display = "none";
+    cerrarModalComparacion();
+  });
+
+  panel.addEventListener("click", (e) => {
+    if (e.target === panel) cerrarModalComparacion();
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !panel.hidden) cerrarModalComparacion();
   });
 
   btnAplicar.addEventListener("click", () => {

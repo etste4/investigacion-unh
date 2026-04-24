@@ -97,24 +97,6 @@
         </button>
       </div>
 
-      <section class="comparar-panel" id="compararPanel" style="display:none" aria-live="polite">
-        <div class="comparar-header">
-          <h3>Comparar docentes</h3>
-          <button class="btn-cerrar-comparar" id="btnCerrarComparar" type="button" aria-label="Cerrar comparacion">Cerrar</button>
-        </div>
-        <div class="comparar-controls">
-          <div class="comparar-campo">
-            <label for="compararInput">Segundo docente</label>
-            <input id="compararInput" type="search" list="listaDocentesComparar" placeholder="Escribe o selecciona un docente..." autocomplete="off">
-            <datalist id="listaDocentesComparar"></datalist>
-          </div>
-          <button class="btn-aplicar-comparar" id="btnAplicarComparar" type="button">Ver comparación</button>
-        </div>
-        <div class="comparar-resultado" id="compararResultado">
-          Selecciona un segundo docente para comparar métricas y publicaciones destacadas.
-        </div>
-      </section>
-
       <div class="dashboard-grid">
         <div class="dash-card">
           <div class="dash-num" id="dTotal">0</div>
@@ -162,6 +144,26 @@
 
     </div>
   </section>
+
+  <div class="comparar-modal" id="compararPanel" hidden>
+    <section class="comparar-panel" aria-live="polite" role="dialog" aria-modal="true" aria-labelledby="compararTitulo">
+      <div class="comparar-header">
+        <h3 id="compararTitulo">Comparar docentes</h3>
+        <button class="btn-cerrar-comparar" id="btnCerrarComparar" type="button" aria-label="Cerrar comparacion">Cerrar</button>
+      </div>
+      <div class="comparar-controls">
+        <div class="comparar-campo">
+          <label for="compararInput">Segundo docente</label>
+          <input id="compararInput" type="search" list="listaDocentesComparar" placeholder="Escribe o selecciona un docente..." autocomplete="off">
+          <datalist id="listaDocentesComparar"></datalist>
+        </div>
+        <button class="btn-aplicar-comparar" id="btnAplicarComparar" type="button">Ver comparación</button>
+      </div>
+      <div class="comparar-resultado" id="compararResultado">
+        Selecciona un segundo docente para comparar métricas y publicaciones destacadas.
+      </div>
+    </section>
+  </div>
 
   <footer class="footer">
     <div class="container footer-inner">
