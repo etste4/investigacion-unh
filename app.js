@@ -361,10 +361,16 @@ function renderPublicaciones() {
     else if (enScopus)     claseCard = "pub-card solo-scopus";
     else if (enWos)        claseCard = "pub-card solo-wos";
 
+    const fuentes    = (p.fuentes || "").toLowerCase();
+    const enOpenAlex  = fuentes.includes("openalex");
+    const enCrossref  = fuentes.includes("crossref");
+
     const badges = [
-      enScopus ? `<span class="badge badge-scopus">Scopus</span>` : "",
-      enWos    ? `<span class="badge badge-wos">WoS</span>`       : "",
-      esOA     ? `<span class="badge badge-oa">OA</span>`         : "",
+      enScopus   ? `<span class="badge badge-scopus">Scopus</span>`       : "",
+      enWos      ? `<span class="badge badge-wos">WoS</span>`             : "",
+      enOpenAlex ? `<span class="badge badge-openalex">OpenAlex</span>`   : "",
+      enCrossref ? `<span class="badge badge-crossref">Crossref</span>`   : "",
+      esOA       ? `<span class="badge badge-oa">OA</span>`               : "",
     ].filter(Boolean).join("");
 
     const tituloHTML = url
@@ -387,7 +393,7 @@ function renderPublicaciones() {
           <div class="card-badges">${badges}</div>
         </div>
         <div class="card-titulo">${tituloHTML}</div>
-        ${p.revista ? `<div class="card-revista">${escapar(p.revista)}</div>` : ""}
+        ${p.revista ? `<div class="card-revista"><span class="card-revista-label">Revista:</span> ${escapar(p.revista)}</div>` : ""}
         <div class="card-footer">
           <div class="card-citas">
             <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" width="13" height="13">

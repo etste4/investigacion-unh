@@ -133,8 +133,10 @@ body{font-family:'Poppins',sans-serif;color:var(--texto);background:var(--g100);
 .card-badges{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
 
 .badge{padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.2px}
-.badge-scopus{background:#e3f2fd;color:#1565c0}
-.badge-wos{background:#fff3e0;color:#e65100}
+.badge-scopus{background:#fff3e0;color:#e65100}
+.badge-wos{background:#f3e5f5;color:#6a1b9a}
+.badge-openalex{background:#f3e5f5;color:#6a1b9a}
+.badge-crossref{background:#fff8e1;color:#f57f17}
 .badge-oa{background:#e8f5e9;color:#2e7d32}
 
 .card-titulo{font-size:13px;font-weight:600;color:var(--oscuro);line-height:1.5}
@@ -143,6 +145,7 @@ body{font-family:'Poppins',sans-serif;color:var(--texto);background:var(--g100);
 
 .card-revista{font-size:12px;color:var(--g700);font-style:italic;display:flex;align-items:center;gap:6px}
 .card-revista::before{content:'';width:3px;height:3px;border-radius:50%;background:var(--azul);flex-shrink:0}
+.card-revista-label{font-style:normal;font-weight:600;color:var(--g500);font-size:10px;text-transform:uppercase;letter-spacing:.4px;flex-shrink:0}
 
 .card-footer{display:flex;justify-content:space-between;align-items:center;margin-top:4px;padding-top:12px;border-top:1px solid var(--g200)}
 .card-citas{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--g700)}
