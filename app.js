@@ -547,7 +547,7 @@ function renderPublicaciones() {
 
   // Contador
   document.getElementById("pubContador").textContent =
-    `${pubs.length} publicación${pubs.length !== 1 ? "es" : ""} encontrada${pubs.length !== 1 ? "s" : ""}`;
+    `${pubs.length} ${pubs.length === 1 ? "publicacion encontrada" : "publicaciones encontradas"}`;
 
   const grid   = document.getElementById("pubGrid");
   const sinPub = document.getElementById("sinPub");
