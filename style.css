@@ -38,8 +38,8 @@ body{font-family:'Poppins',sans-serif;color:var(--texto);background:var(--g100);
 @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.3)}}
 
 /* ── HERO ── */
-.hero{background:var(--oscuro);padding:60px 24px 100px;position:relative;overflow:hidden}
-.hero-bg{position:absolute;inset:0;pointer-events:none}
+.hero{background:var(--oscuro);padding:60px 24px 100px;position:relative}
+.hero-bg{position:absolute;inset:0;pointer-events:none;overflow:hidden}
 .hero-circle{position:absolute;border-radius:50%;opacity:.07}
 .hero-circle.c1{width:480px;height:480px;background:var(--azul);top:-180px;right:-80px}
 .hero-circle.c2{width:280px;height:280px;background:var(--amarillo);bottom:-140px;left:4%}
