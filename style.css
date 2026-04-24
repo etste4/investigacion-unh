@@ -206,7 +206,8 @@ body{font-family:'Poppins',sans-serif;color:var(--texto);background:var(--g100);
 .card-anio{font-size:11px;font-weight:700;color:var(--blanco);background:var(--oscuro);padding:3px 10px;border-radius:20px;white-space:nowrap;flex-shrink:0}
 .card-badges{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
 
-.badge{padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.2px}
+.badge{padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.2px;display:inline-flex;align-items:center;gap:4px}
+.badge-logo{width:11px;height:11px;object-fit:contain;display:block}
 .badge-scopus{background:#fff3e0;color:#e65100}
 .badge-wos{background:#f3e5f5;color:#6a1b9a}
 .badge-scielo{background:#e8f5e9;color:#1b5e20}

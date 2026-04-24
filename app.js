@@ -579,9 +579,9 @@ function renderPublicaciones() {
     const enCrossref  = fuentes.includes("crossref");
 
     const badges = [
-      enScopus   ? `<span class="badge badge-scopus">Scopus</span>`       : "",
-      enWos      ? `<span class="badge badge-wos">WoS</span>`             : "",
-      enScielo   ? `<span class="badge badge-scielo">SciELO</span>`       : "",
+      enScopus   ? `<span class="badge badge-scopus"><img src="assets/scopus.png" alt="" class="badge-logo">Scopus</span>` : "",
+      enWos      ? `<span class="badge badge-wos"><img src="assets/wos.png" alt="" class="badge-logo">WoS</span>`         : "",
+      enScielo   ? `<span class="badge badge-scielo"><img src="assets/scielo.png" alt="" class="badge-logo">SciELO</span>` : "",
       enOpenAlex ? `<span class="badge badge-openalex">OpenAlex</span>`   : "",
       enCrossref ? `<span class="badge badge-crossref">Crossref</span>`   : "",
       esOA       ? `<span class="badge badge-oa">OA</span>`               : "",
