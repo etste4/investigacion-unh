@@ -33,12 +33,11 @@ async function cargarDatos() {
     const text = await res.text();
     const raw  = parsearCSV(text);
 
-    // Filtrar solo publicaciones reales
+    // Filtrar solo errores técnicos — SIN PUBLICACIONES sí se incluye
     todosLosDatos = raw.filter(d =>
       d.titulo &&
-      !d.titulo.startsWith("SIN ") &&
       !d.titulo.startsWith("ERROR") &&
-      !d.titulo.startsWith("NO ") &&
+      !d.titulo.startsWith("NO IDENTIFICADO") &&
       d.docente && d.docente.trim()
     );
 
@@ -256,15 +255,16 @@ function mostrarDocente(nombre) {
     ? `ORCID: <a href="https://orcid.org/${orcid}" target="_blank">${orcid}</a>`
     : "";
 
-  // Dashboard
-  const enScopus = pubs.filter(p => esBool(p.en_scopus)).length;
-  const enWos    = pubs.filter(p => esBool(p.en_wos)).length;
-  const citas    = pubs.reduce((s, p) => s + (parseInt(p.citas) || 0), 0);
-  const enOA     = pubs.filter(p => (p.open_access||"").match(/gold|green/i)).length;
-  const anios    = [...new Set(pubs.map(p => p.anio).filter(Boolean))].sort();
+  // Dashboard — solo con publicaciones reales
+  const pubsReales = pubs.filter(p => !p.titulo.startsWith("SIN "));
+  const enScopus = pubsReales.filter(p => esBool(p.en_scopus)).length;
+  const enWos    = pubsReales.filter(p => esBool(p.en_wos)).length;
+  const citas    = pubsReales.reduce((s, p) => s + (parseInt(p.citas) || 0), 0);
+  const enOA     = pubsReales.filter(p => (p.open_access||"").match(/gold|green/i)).length;
+  const anios    = [...new Set(pubsReales.map(p => p.anio).filter(Boolean))].sort();
   const rangoAnios = anios.length > 1 ? `${anios[0]}–${anios[anios.length-1]}` : anios[0] || "—";
 
-  animarNum("dTotal",  pubs.length);
+  animarNum("dTotal",  pubsReales.length);
   animarNum("dScopus", enScopus);
   animarNum("dWos",    enWos);
   animarNum("dCitas",  citas);
@@ -277,7 +277,7 @@ function mostrarDocente(nombre) {
   tipoSeleccionado  = "";
   fuenteSeleccionada= "";
 
-  const aniosUnicos = [...new Set(pubs.map(p => p.anio).filter(Boolean))].sort((a,b) => b - a);
+  const aniosUnicos = [...new Set(pubsReales.map(p => p.anio).filter(Boolean))].sort((a,b) => b - a);
   filtrosAnioDiv.innerHTML = `<button class="chip activo" data-anio="">Todos</button>` +
     aniosUnicos.map(a => `<button class="chip" data-anio="${a}">${a}</button>`).join("");
 
@@ -291,7 +291,7 @@ function mostrarDocente(nombre) {
   });
 
   // Filtro de tipo
-  const tipos = [...new Set(pubs.map(p => p.tipo_documento).filter(Boolean))].sort();
+  const tipos = [...new Set(pubsReales.map(p => p.tipo_documento).filter(Boolean))].sort();
   const filtroTipo = document.getElementById("filtroTipo");
   filtroTipo.innerHTML = `<option value="">Todos los tipos</option>` +
     tipos.map(t => `<option value="${t}">${capitalizarTipo(t)}</option>`).join("");
@@ -497,7 +497,34 @@ function configurarFiltros() {
 
 function renderPublicaciones() {
   if (!docenteActual) return;
-  let pubs = [...(docentesMap[docenteActual] || [])];
+  const todasPubs = [...(docentesMap[docenteActual] || [])];
+
+  // Separar publicaciones reales de filas "SIN PUBLICACIONES"
+  const sinPublicaciones = todasPubs.every(p => p.titulo.startsWith("SIN "));
+  let pubs = todasPubs.filter(p => !p.titulo.startsWith("SIN "));
+
+  // Si el docente no tiene publicaciones mostrar mensaje especial
+  if (sinPublicaciones || pubs.length === 0 && todasPubs.length > 0 && todasPubs[0].titulo.startsWith("SIN ")) {
+    const grid   = document.getElementById("pubGrid");
+    const sinPub = document.getElementById("sinPub");
+    document.getElementById("pubContador").textContent = "0 publicaciones encontradas";
+    grid.innerHTML = `
+      <div style="grid-column:1/-1;background:var(--blanco);border-radius:var(--radio);
+      box-shadow:var(--sombra);padding:56px 24px;text-align:center">
+        <svg viewBox="0 0 64 64" fill="none" width="52" height="52" style="margin-bottom:16px;opacity:.35">
+          <circle cx="32" cy="32" r="30" stroke="#3c3d3d" stroke-width="2"/>
+          <path d="M20 32h24" stroke="#3c3d3d" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <div style="font-size:16px;font-weight:700;color:var(--oscuro);margin-bottom:8px">
+          Sin publicaciones registradas
+        </div>
+        <div style="font-size:13px;color:var(--g500);max-width:320px;margin:0 auto;line-height:1.7">
+          No se encontraron publicaciones para este docente en el período 2025–2026.
+        </div>
+      </div>`;
+    sinPub.style.display = "none";
+    return;
+  }
 
   // Aplicar filtros
   if (anioSeleccionado)   pubs = pubs.filter(p => p.anio === anioSeleccionado);
