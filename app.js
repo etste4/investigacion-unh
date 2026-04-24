@@ -103,6 +103,17 @@ function configurarBuscador() {
   const sugerencias = document.getElementById("sugerencias");
   const btnClear   = document.getElementById("btnClear");
 
+  const actualizarActiva = () => {
+    const items = sugerencias.querySelectorAll("li");
+    items.forEach((item, idx) => {
+      const activa = item.classList.contains("activa");
+      item.setAttribute("aria-selected", activa ? "true" : "false");
+      if (!item.id) item.id = `sug-item-${idx}`;
+      if (activa) input.setAttribute("aria-activedescendant", item.id);
+    });
+    if (!sugerencias.querySelector("li.activa")) input.removeAttribute("aria-activedescendant");
+  };
+
   input.addEventListener("input", () => {
     const q = input.value.trim().toLowerCase();
     btnClear.classList.toggle("visible", q.length > 0);
@@ -133,7 +144,7 @@ function configurarBuscador() {
       const dept    = (pubs[0]?.departamento || "").replace("DEPARTAMENTO ACADÉMICO DE ", "");
       const iniciales = obtenerIniciales(nombre);
       return `
-        <li data-nombre="${escapar(nombre)}">
+        <li data-nombre="${escapar(nombre)}" role="option" aria-selected="false">
           <div class="sug-avatar">${iniciales}</div>
           <div class="sug-info">
             <span class="sug-nombre">${resaltarCoincidencia(escapar(nombre), q)}</span>
@@ -143,6 +154,8 @@ function configurarBuscador() {
     }).join("");
 
     sugerencias.classList.add("visible");
+    input.setAttribute("aria-expanded", "true");
+    actualizarActiva();
 
     // Click en sugerencia
     sugerencias.querySelectorAll("li").forEach(li => {
@@ -167,12 +180,14 @@ function configurarBuscador() {
         activa.classList.remove("activa");
         (activa.nextElementSibling || items[0])?.classList.add("activa");
       }
+      actualizarActiva();
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
       if (activa) {
         activa.classList.remove("activa");
         (activa.previousElementSibling || items[items.length - 1])?.classList.add("activa");
       }
+      actualizarActiva();
     } else if (e.key === "Enter") {
       e.preventDefault();
       if (activa) {
@@ -200,8 +215,12 @@ function configurarBuscador() {
 }
 
 function cerrarSugerencias() {
-  document.getElementById("sugerencias").classList.remove("visible");
-  document.getElementById("sugerencias").innerHTML = "";
+  const sugerencias = document.getElementById("sugerencias");
+  const input = document.getElementById("searchInput");
+  sugerencias.classList.remove("visible");
+  sugerencias.innerHTML = "";
+  input.setAttribute("aria-expanded", "false");
+  input.removeAttribute("aria-activedescendant");
 }
 
 function resaltarCoincidencia(texto, q) {

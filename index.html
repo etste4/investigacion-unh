@@ -3,30 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Portal de produccion cientifica de docentes UNH con filtros por fuente, anio y tipo de documento.">
   <title>Producción Científica — UNH</title>
+  <link rel="preload" as="image" href="assets/fondo_unh_opt.jpg" fetchpriority="high">
+  <link rel="preload" as="image" href="assets/fondo_unh_mobile.jpg" media="(max-width: 768px)">
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
-  <header class="header">
-    <div class="header-inner">
-      <div class="header-brand">
-        <div class="logo-slot">
-          <img src="logo.png" alt="UNH" class="logo-img" onerror="this.style.display='none'">
-        </div>
-        <div class="header-titles">
-          <span class="header-sigla">UNH</span>
-          <span class="header-nombre">Universidad Nacional de Huancavelica</span>
-          <span class="header-sub">Vicerrectorado de Investigación</span>
-        </div>
-      </div>
-      <div class="header-badge">
-        <span class="badge-dot"></span>
-        <span>Actualización automática</span>
-      </div>
-    </div>
-  </header>
 
   <section class="hero">
     <div class="hero-bg">
@@ -35,7 +19,7 @@
       <div class="hero-circle c3"></div>
     </div>
     <div class="hero-content">
-      <img src="assets/logo_blanco.png" alt="Logo UNH" class="hero-logo" onerror="this.style.display='none'">
+      <img src="assets/logo_blanco.png" alt="Logo UNH" class="hero-logo" width="220" height="220" decoding="async" fetchpriority="high" onerror="this.style.display='none'">
       <h1 class="hero-title">Producción<br><span class="hero-accent">Científica</span></h1>
       <p class="hero-desc">Consulta las publicaciones de los docentes de la UNH indexadas en Scopus, Web of Science y otras bases internacionales.</p>
       <div class="search-container">
@@ -43,10 +27,10 @@
           <svg class="search-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="9" cy="9" r="6"/><path d="M15 15l3 3"/>
           </svg>
-          <input type="text" id="searchInput" placeholder="Escribe el nombre del docente..." autocomplete="off" spellcheck="false">
-          <button class="btn-clear-search" id="btnClear">✕</button>
+          <input type="search" id="searchInput" placeholder="Escribe el nombre del docente..." autocomplete="off" spellcheck="false" aria-label="Buscar docente" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="sugerencias">
+          <button class="btn-clear-search" id="btnClear" type="button" aria-label="Limpiar busqueda">✕</button>
         </div>
-        <ul class="sugerencias" id="sugerencias"></ul>
+        <ul class="sugerencias" id="sugerencias" role="listbox" aria-label="Sugerencias de docentes"></ul>
       </div>
     </div>
   </section>
