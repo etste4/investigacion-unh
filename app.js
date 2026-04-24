@@ -683,8 +683,25 @@ function esAutorDelDocente(nombreAutor, nombreDocente) {
     return true;
   }
 
+  const info = obtenerInfoDocente(nombreDocente);
+  if (!info) return false;
+
+  // Caso típico bibliográfico: "Apellido, FO"
+  const inicialesAutor = extraerInicialesAutor(nombreAutor);
+  const coincideApellido = info.apellidos.some(ap => autor.includes(ap));
+  const coincideIniciales = info.iniciales.some(ini => ini && inicialesAutor.includes(ini));
+  if (coincideApellido && coincideIniciales) {
+    return true;
+  }
+
+  // Respaldo: apellido + al menos un nombre del docente
+  const coincideNombre = info.nombres.some(n => autor.includes(n));
+  if (coincideApellido && coincideNombre) {
+    return true;
+  }
+
+  // Fallback por tokens para formatos menos estrictos
   const tokensDocente = docente.split(" ").filter(t => t.length > 2);
-  if (!tokensDocente.length) return false;
   const coincidencias = tokensDocente.filter(t => autor.includes(t)).length;
   return coincidencias >= Math.min(2, tokensDocente.length);
 }
@@ -697,6 +714,47 @@ function normalizarTexto(texto) {
     .replace(/[^a-z0-9\s]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function obtenerInfoDocente(nombreDocente) {
+  const limpio = normalizarTexto(nombreDocente);
+  const tokens = limpio.split(" ").filter(Boolean);
+  if (tokens.length < 2) return null;
+
+  const apellido1 = tokens[tokens.length - 1];
+  const apellido2 = tokens.length >= 3 ? tokens[tokens.length - 2] : "";
+
+  const nombresConUnApellido = tokens.slice(0, -1);
+  const nombresConDosApellidos = tokens.length >= 3 ? tokens.slice(0, -2) : nombresConUnApellido;
+
+  const ini1 = nombresConUnApellido.map(t => t[0]).join("");
+  const ini2 = nombresConDosApellidos.map(t => t[0]).join("");
+
+  return {
+    apellidos: [apellido1, `${apellido2} ${apellido1}`.trim()].filter(a => a.length > 2),
+    nombres: [...new Set([...nombresConUnApellido, ...nombresConDosApellidos])].filter(n => n.length > 2),
+    iniciales: [...new Set([ini1, ini2])].filter(Boolean)
+  };
+}
+
+function extraerInicialesAutor(nombreAutor) {
+  const raw = String(nombreAutor || "");
+  if (raw.includes(",")) {
+    return raw
+      .split(",")
+      .slice(1)
+      .join(" ")
+      .toLowerCase()
+      .replace(/[^a-z]/g, "");
+  }
+
+  return raw
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map(t => t.replace(/[^a-z]/g, ""))
+    .filter(t => t.length === 1)
+    .join("");
 }
 
 function limpiarAnio(anio) {
