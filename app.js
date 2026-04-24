@@ -261,6 +261,7 @@ function mostrarDocente(nombre) {
   const enWos    = pubsReales.filter(p => esBool(p.en_wos)).length;
   const citas    = pubsReales.reduce((s, p) => s + (parseInt(p.citas) || 0), 0);
   const enOA     = pubsReales.filter(p => (p.open_access||"").match(/gold|green/i)).length;
+  const enScielo = pubsReales.filter(p => esBool(p.en_scielo)).length;
   const anios    = [...new Set(pubsReales.map(p => p.anio).filter(Boolean))].sort();
   const rangoAnios = anios.length > 1 ? `${anios[0]}–${anios[anios.length-1]}` : anios[0] || "—";
 
@@ -269,6 +270,7 @@ function mostrarDocente(nombre) {
   animarNum("dWos",    enWos);
   animarNum("dCitas",  citas);
   animarNum("dOA",     enOA);
+  animarNum("dScielo", enScielo);
   document.getElementById("dAnios").textContent = rangoAnios;
 
   // Filtros de año
@@ -561,6 +563,7 @@ function renderPublicaciones() {
     const citas    = parseInt(p.citas) || 0;
     const enScopus = esBool(p.en_scopus);
     const enWos    = esBool(p.en_wos);
+    const enScielo = esBool(p.en_scielo);
     const esOA     = !!(p.open_access||"").match(/gold|green/i);
     const url      = p.url_doi || p.url_scopus || p.url_wos || "";
 
@@ -577,6 +580,7 @@ function renderPublicaciones() {
     const badges = [
       enScopus   ? `<span class="badge badge-scopus">Scopus</span>`       : "",
       enWos      ? `<span class="badge badge-wos">WoS</span>`             : "",
+      enScielo   ? `<span class="badge badge-scielo">SciELO</span>`       : "",
       enOpenAlex ? `<span class="badge badge-openalex">OpenAlex</span>`   : "",
       enCrossref ? `<span class="badge badge-crossref">Crossref</span>`   : "",
       esOA       ? `<span class="badge badge-oa">OA</span>`               : "",

@@ -174,6 +174,7 @@ body{font-family:'Poppins',sans-serif;color:var(--texto);background:var(--g100);
 .dash-card.accent-blue{border-top-color:var(--azul)}
 .dash-card.accent-dark{border-top-color:var(--oscuro)}
 .dash-card.accent-yellow{border-top-color:var(--amarillo-d)}
+.dash-card.accent-green{border-top-color:#4caf50}
 .dash-num{font-size:30px;font-weight:800;color:var(--oscuro);line-height:1;margin-bottom:6px}
 .dash-label{font-size:11px;color:var(--g500);font-weight:500;text-transform:uppercase;letter-spacing:.4px}
 
@@ -208,6 +209,7 @@ body{font-family:'Poppins',sans-serif;color:var(--texto);background:var(--g100);
 .badge{padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.2px}
 .badge-scopus{background:#fff3e0;color:#e65100}
 .badge-wos{background:#f3e5f5;color:#6a1b9a}
+.badge-scielo{background:#e8f5e9;color:#1b5e20}
 .badge-openalex{background:#f3e5f5;color:#6a1b9a}
 .badge-crossref{background:#fff8e1;color:#f57f17}
 .badge-oa{background:#e8f5e9;color:#2e7d32}
