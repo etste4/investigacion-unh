@@ -386,13 +386,19 @@ function renderPublicaciones() {
          </a>`
       : "";
 
-    // Autores: mostrar máximo 3 y luego "et al."
+    // Autores: mostrar máximo 3 con botón "ver más"
     const autoresRaw = (p.autores || "").trim();
     let autoresHTML  = "";
     if (autoresRaw) {
-      const lista = autoresRaw.split(";").map(a => a.trim()).filter(Boolean);
-      const mostrar = lista.slice(0, 3).join("; ");
-      autoresHTML = lista.length > 3 ? `${mostrar} <em>et al.</em>` : mostrar;
+      const lista   = autoresRaw.split(";").map(a => a.trim()).filter(Boolean);
+      const cardId  = `autores-${i}`;
+      if (lista.length > 3) {
+        const visibles = lista.slice(0, 3).join("; ");
+        const todos    = lista.join("; ");
+        autoresHTML = `<span class="autores-corto" id="${cardId}-corto">${escapar(visibles)}</span><span class="autores-largo" id="${cardId}-largo" style="display:none">${escapar(todos)}</span> <button class="btn-ver-mas" onclick="toggleAutores('${cardId}')">ver más</button>`;
+      } else {
+        autoresHTML = lista.join("; ");
+      }
     }
 
     // Tema principal
@@ -442,6 +448,16 @@ function renderPublicaciones() {
 
 function esBool(valor) {
   return valor === "True" || valor === "true" || valor === "TRUE" || valor === true;
+}
+
+function toggleAutores(id) {
+  const corto  = document.getElementById(`${id}-corto`);
+  const largo  = document.getElementById(`${id}-largo`);
+  const btn    = corto.closest(".card-autores").querySelector(".btn-ver-mas");
+  const abierto = largo.style.display !== "none";
+  corto.style.display = abierto ? "inline"  : "none";
+  largo.style.display = abierto ? "none"    : "inline";
+  btn.textContent     = abierto ? "ver más" : "ver menos";
 }
 
 function obtenerIniciales(nombre) {
