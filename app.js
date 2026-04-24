@@ -1,46 +1,56 @@
 // ============================================================
-// PORTAL DE INVESTIGACIÓN UNH — app.js
-// Lee Google Sheets publicado como CSV y muestra publicaciones
+// PORTAL DE INVESTIGACIÓN UNH — app.js v2
+// Búsqueda por docente + dashboard + cards de publicaciones
 // ============================================================
 
 const SHEETS_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTnX1PTEE3CAOfyx-OLMlowO090KxbxozOPULTdVPEBXHNLA_m_YIybSWcJ68QuzwBI5yZ2aBUlWCv2/pub?output=csv";
-const POR_PAGINA = 20;
 
-// Estado global
-let datos        = [];
-let datosFiltros = [];
-let paginaActual = 1;
-let sortCol      = "anio";
-let sortDir      = "desc";
+let todosLosDatos     = [];   // todas las publicaciones
+let docentesMap       = {};   // { nombre: [publicaciones] }
+let docenteActual     = null;
+let pubFiltradas      = [];
+let anioSeleccionado  = "";
+let tipoSeleccionado  = "";
+let fuenteSeleccionada= "";
 
 // ─────────────────────────────────────────────────────────────
 // INICIO
 // ─────────────────────────────────────────────────────────────
 
-document.addEventListener("DOMContentLoaded", () => {
-  cargarDatos();
-  configurarEventos();
+document.addEventListener("DOMContentLoaded", async () => {
+  await cargarDatos();
+  configurarBuscador();
+  configurarFiltros();
+  document.getElementById("btnVolver").addEventListener("click", volverAlInicio);
 });
 
 async function cargarDatos() {
   try {
     const res  = await fetch(SHEETS_CSV);
-    if (!res.ok) throw new Error("Error al cargar datos");
     const text = await res.text();
-    datos = parsearCSV(text);
-    datos = datos.filter(d => d.titulo && !d.titulo.startsWith("SIN ") && !d.titulo.startsWith("ERROR") && !d.titulo.startsWith("NO "));
+    const raw  = parsearCSV(text);
 
-    inicializarFiltros();
-    aplicarFiltros();
-    actualizarMetricas();
+    // Filtrar solo publicaciones reales
+    todosLosDatos = raw.filter(d =>
+      d.titulo &&
+      !d.titulo.startsWith("SIN ") &&
+      !d.titulo.startsWith("ERROR") &&
+      !d.titulo.startsWith("NO ") &&
+      d.docente && d.docente.trim()
+    );
 
-    document.getElementById("loading").style.display = "none";
-    document.getElementById("tabla-pub").style.display = "table";
+    // Agrupar por docente
+    docentesMap = {};
+    todosLosDatos.forEach(d => {
+      const nombre = d.docente.trim();
+      if (!docentesMap[nombre]) docentesMap[nombre] = [];
+      docentesMap[nombre].push(d);
+    });
 
   } catch (e) {
-    console.error(e);
-    document.getElementById("loading").style.display     = "none";
-    document.getElementById("error-state").style.display = "flex";
+    console.error("Error cargando datos:", e);
+    document.getElementById("estadoInicial").innerHTML =
+      '<div class="container"><div class="placeholder-content"><h3>Error al cargar datos</h3><p>No se pudo conectar con la base de datos. Intenta más tarde.</p></div></div>';
   }
 }
 
@@ -52,18 +62,15 @@ async function cargarDatos() {
 function parsearCSV(text) {
   const lineas  = text.split("\n");
   if (lineas.length < 2) return [];
-
   const headers = parsearFila(lineas[0]).map(h => h.trim().toLowerCase().replace(/\s+/g, "_"));
   const result  = [];
-
   for (let i = 1; i < lineas.length; i++) {
     const fila = parsearFila(lineas[i]);
     if (fila.every(c => !c.trim())) continue;
-    const obj  = {};
+    const obj = {};
     headers.forEach((h, idx) => { obj[h] = (fila[idx] || "").trim(); });
     result.push(obj);
   }
-
   return result;
 }
 
@@ -71,7 +78,6 @@ function parsearFila(linea) {
   const result = [];
   let current  = "";
   let enComilla = false;
-
   for (let i = 0; i < linea.length; i++) {
     const c = linea[i];
     if (c === '"') {
@@ -89,306 +95,312 @@ function parsearFila(linea) {
 
 
 // ─────────────────────────────────────────────────────────────
-// INICIALIZAR FILTROS DINÁMICOS
+// BUSCADOR CON SUGERENCIAS
 // ─────────────────────────────────────────────────────────────
 
-function inicializarFiltros() {
-  // Años únicos ordenados desc
-  const anios = [...new Set(datos.map(d => d.anio).filter(Boolean))].sort((a, b) => b - a);
-  const selAnio = document.getElementById("filtro-anio");
-  anios.forEach(a => {
-    const opt = document.createElement("option");
-    opt.value = a;
-    opt.textContent = a;
-    selAnio.appendChild(opt);
+function configurarBuscador() {
+  const input      = document.getElementById("searchInput");
+  const sugerencias = document.getElementById("sugerencias");
+  const btnClear   = document.getElementById("btnClear");
+
+  input.addEventListener("input", () => {
+    const q = input.value.trim().toLowerCase();
+    btnClear.classList.toggle("visible", q.length > 0);
+
+    if (q.length < 2) {
+      cerrarSugerencias();
+      return;
+    }
+
+    // Buscar docentes que coincidan
+    const coincidencias = Object.keys(docentesMap)
+      .filter(nombre => nombre.toLowerCase().includes(q))
+      .sort((a, b) => {
+        // Priorizar los que empiezan con la búsqueda
+        const aStarts = a.toLowerCase().startsWith(q) ? 0 : 1;
+        const bStarts = b.toLowerCase().startsWith(q) ? 0 : 1;
+        return aStarts - bStarts || a.localeCompare(b);
+      })
+      .slice(0, 8);
+
+    if (coincidencias.length === 0) {
+      cerrarSugerencias();
+      return;
+    }
+
+    sugerencias.innerHTML = coincidencias.map(nombre => {
+      const pubs    = docentesMap[nombre];
+      const dept    = (pubs[0]?.departamento || "").replace("DEPARTAMENTO ACADÉMICO DE ", "");
+      const iniciales = obtenerIniciales(nombre);
+      return `
+        <li data-nombre="${escapar(nombre)}">
+          <div class="sug-avatar">${iniciales}</div>
+          <div class="sug-info">
+            <span class="sug-nombre">${resaltarCoincidencia(escapar(nombre), q)}</span>
+            <span class="sug-dept">${dept || "Docente UNH"} · ${pubs.length} pub.</span>
+          </div>
+        </li>`;
+    }).join("");
+
+    sugerencias.classList.add("visible");
+
+    // Click en sugerencia
+    sugerencias.querySelectorAll("li").forEach(li => {
+      li.addEventListener("click", () => {
+        const nombre = li.dataset.nombre;
+        input.value  = nombre;
+        cerrarSugerencias();
+        btnClear.classList.add("visible");
+        mostrarDocente(nombre);
+      });
+    });
   });
 
-  // Departamentos únicos ordenados
-  const depts = [...new Set(datos.map(d => d.departamento).filter(Boolean))].sort();
-  const selDept = document.getElementById("filtro-dept");
-  depts.forEach(d => {
-    const opt = document.createElement("option");
-    opt.value = d;
-    opt.textContent = d.replace("DEPARTAMENTO ACADÉMICO DE ", "");
-    selDept.appendChild(opt);
+  // Navegación con teclado
+  input.addEventListener("keydown", e => {
+    const items = sugerencias.querySelectorAll("li");
+    const activa = sugerencias.querySelector("li.activa");
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      if (!activa) items[0]?.classList.add("activa");
+      else {
+        activa.classList.remove("activa");
+        (activa.nextElementSibling || items[0])?.classList.add("activa");
+      }
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      if (activa) {
+        activa.classList.remove("activa");
+        (activa.previousElementSibling || items[items.length - 1])?.classList.add("activa");
+      }
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      if (activa) {
+        input.value = activa.dataset.nombre;
+        cerrarSugerencias();
+        btnClear.classList.add("visible");
+        mostrarDocente(activa.dataset.nombre);
+      }
+    } else if (e.key === "Escape") {
+      cerrarSugerencias();
+    }
   });
 
-  // Tipos de documento
-  const tipos = [...new Set(datos.map(d => d.tipo_documento).filter(Boolean))].sort();
-  const selTipo = document.getElementById("filtro-tipo");
-  tipos.forEach(t => {
-    const opt = document.createElement("option");
-    opt.value = t;
-    opt.textContent = capitalizarTipo(t);
-    selTipo.appendChild(opt);
-  });
-}
-
-
-// ─────────────────────────────────────────────────────────────
-// MÉTRICAS
-// ─────────────────────────────────────────────────────────────
-
-function actualizarMetricas() {
-  const total   = datos.length;
-  const scopus  = datos.filter(d => d.en_scopus === "True" || d.en_scopus === "true" || d.en_scopus === "TRUE").length;
-  const wos     = datos.filter(d => d.en_wos    === "True" || d.en_wos    === "true" || d.en_wos    === "TRUE").length;
-  const docentes = new Set(datos.map(d => d.docente).filter(Boolean)).size;
-
-  animarNumero("total-pub",     total);
-  animarNumero("total-scopus",  scopus);
-  animarNumero("total-wos",     wos);
-  animarNumero("total-docentes",docentes);
-}
-
-function animarNumero(id, final) {
-  const el    = document.getElementById(id);
-  const dur   = 1000;
-  const inicio = performance.now();
-
-  function step(now) {
-    const t = Math.min((now - inicio) / dur, 1);
-    const ease = 1 - Math.pow(1 - t, 3);
-    el.textContent = Math.round(ease * final).toLocaleString("es-PE");
-    if (t < 1) requestAnimationFrame(step);
-  }
-  requestAnimationFrame(step);
-}
-
-
-// ─────────────────────────────────────────────────────────────
-// FILTROS Y BÚSQUEDA
-// ─────────────────────────────────────────────────────────────
-
-function configurarEventos() {
-  const buscar    = document.getElementById("buscar");
-  const btnClear  = document.getElementById("btn-clear");
-  const filtroAnio  = document.getElementById("filtro-anio");
-  const filtroDept  = document.getElementById("filtro-dept");
-  const filtroFuente= document.getElementById("filtro-fuente");
-  const filtroTipo  = document.getElementById("filtro-tipo");
-  const btnExportar = document.getElementById("btn-exportar");
-
-  buscar.addEventListener("input", () => {
-    btnClear.classList.toggle("visible", buscar.value.length > 0);
-    paginaActual = 1;
-    aplicarFiltros();
+  // Cerrar al hacer click fuera
+  document.addEventListener("click", e => {
+    if (!e.target.closest(".search-container")) cerrarSugerencias();
   });
 
   btnClear.addEventListener("click", () => {
-    buscar.value = "";
+    input.value = "";
     btnClear.classList.remove("visible");
-    paginaActual = 1;
-    aplicarFiltros();
+    cerrarSugerencias();
+    volverAlInicio();
   });
-
-  [filtroAnio, filtroDept, filtroFuente, filtroTipo].forEach(el => {
-    el.addEventListener("change", () => {
-      paginaActual = 1;
-      aplicarFiltros();
-    });
-  });
-
-  // Sort por columna
-  document.querySelectorAll(".th-sort").forEach(th => {
-    th.addEventListener("click", () => {
-      const col = th.dataset.col;
-      if (sortCol === col) {
-        sortDir = sortDir === "asc" ? "desc" : "asc";
-      } else {
-        sortCol = col;
-        sortDir = col === "anio" || col === "citas" ? "desc" : "asc";
-      }
-      document.querySelectorAll(".sort-icon").forEach(s => { s.className = "sort-icon"; });
-      th.querySelector(".sort-icon").className = "sort-icon " + sortDir;
-      aplicarFiltros();
-    });
-  });
-
-  btnExportar.addEventListener("click", exportarCSV);
 }
 
-function aplicarFiltros() {
-  const q        = document.getElementById("buscar").value.toLowerCase().trim();
-  const anio     = document.getElementById("filtro-anio").value;
-  const dept     = document.getElementById("filtro-dept").value;
-  const fuente   = document.getElementById("filtro-fuente").value;
-  const tipo     = document.getElementById("filtro-tipo").value;
+function cerrarSugerencias() {
+  document.getElementById("sugerencias").classList.remove("visible");
+  document.getElementById("sugerencias").innerHTML = "";
+}
 
-  datosFiltros = datos.filter(d => {
-    // Búsqueda de texto
-    if (q) {
-      const haystack = [d.titulo, d.docente, d.revista, d.palabras_clave, d.autores].join(" ").toLowerCase();
-      if (!haystack.includes(q)) return false;
-    }
-    // Año
-    if (anio && d.anio !== anio) return false;
-    // Departamento
-    if (dept && d.departamento !== dept) return false;
-    // Fuente
-    if (fuente === "scopus"    && !(d.en_scopus === "True" || d.en_scopus === "true" || d.en_scopus === "TRUE")) return false;
-    if (fuente === "wos"       && !(d.en_wos    === "True" || d.en_wos    === "true" || d.en_wos    === "TRUE")) return false;
-    if (fuente === "openaccess"&& !d.open_access?.toLowerCase().includes("gold") && !d.open_access?.toLowerCase().includes("green")) return false;
-    // Tipo
-    if (tipo && d.tipo_documento !== tipo) return false;
-
-    return true;
-  });
-
-  // Ordenar
-  datosFiltros.sort((a, b) => {
-    let va = a[sortCol] || "";
-    let vb = b[sortCol] || "";
-    if (sortCol === "citas" || sortCol === "anio") {
-      va = parseFloat(va) || 0;
-      vb = parseFloat(vb) || 0;
-    } else {
-      va = va.toString().toLowerCase();
-      vb = vb.toString().toLowerCase();
-    }
-    if (va < vb) return sortDir === "asc" ? -1 : 1;
-    if (va > vb) return sortDir === "asc" ? 1 : -1;
-    return 0;
-  });
-
-  renderTabla();
-  renderPaginacion();
-
-  const count = datosFiltros.length;
-  document.getElementById("resultados-count").textContent =
-    `${count.toLocaleString("es-PE")} publicación${count !== 1 ? "es" : ""} encontrada${count !== 1 ? "s" : ""}`;
+function resaltarCoincidencia(texto, q) {
+  const regex = new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, "gi");
+  return texto.replace(regex, "<strong>$1</strong>");
 }
 
 
 // ─────────────────────────────────────────────────────────────
-// RENDERIZAR TABLA
+// MOSTRAR PERFIL DE DOCENTE
 // ─────────────────────────────────────────────────────────────
 
-function renderTabla() {
-  const tbody  = document.getElementById("tabla-body");
-  const inicio = (paginaActual - 1) * POR_PAGINA;
-  const fin    = inicio + POR_PAGINA;
-  const pagina = datosFiltros.slice(inicio, fin);
+function mostrarDocente(nombre) {
+  docenteActual = nombre;
+  const pubs    = docentesMap[nombre] || [];
 
-  if (pagina.length === 0) {
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="8" style="text-align:center;padding:48px;color:#adb5bd;">
-          No se encontraron publicaciones con los filtros aplicados.
-        </td>
-      </tr>`;
+  if (pubs.length === 0) return;
+
+  const primera  = pubs[0];
+  const dept     = (primera.departamento || "").replace("DEPARTAMENTO ACADÉMICO DE ", "");
+  const orcid    = primera.orcid_docente || "";
+  const iniciales = obtenerIniciales(nombre);
+
+  // Perfil
+  document.getElementById("perfilAvatar").textContent = iniciales;
+  document.getElementById("perfilNombre").textContent = nombre;
+  document.getElementById("perfilDept").textContent   = dept || "Docente UNH";
+  document.getElementById("perfilOrcid").innerHTML    = orcid
+    ? `ORCID: <a href="https://orcid.org/${orcid}" target="_blank">${orcid}</a>`
+    : "";
+
+  // Dashboard
+  const enScopus = pubs.filter(p => esBool(p.en_scopus)).length;
+  const enWos    = pubs.filter(p => esBool(p.en_wos)).length;
+  const citas    = pubs.reduce((s, p) => s + (parseInt(p.citas) || 0), 0);
+  const enOA     = pubs.filter(p => (p.open_access||"").match(/gold|green/i)).length;
+  const anios    = [...new Set(pubs.map(p => p.anio).filter(Boolean))].sort();
+  const rangoAnios = anios.length > 1 ? `${anios[0]}–${anios[anios.length-1]}` : anios[0] || "—";
+
+  animarNum("dTotal",  pubs.length);
+  animarNum("dScopus", enScopus);
+  animarNum("dWos",    enWos);
+  animarNum("dCitas",  citas);
+  animarNum("dOA",     enOA);
+  document.getElementById("dAnios").textContent = rangoAnios;
+
+  // Filtros de año
+  const filtrosAnioDiv = document.getElementById("filtrosAnio");
+  anioSeleccionado  = "";
+  tipoSeleccionado  = "";
+  fuenteSeleccionada= "";
+
+  const aniosUnicos = [...new Set(pubs.map(p => p.anio).filter(Boolean))].sort((a,b) => b - a);
+  filtrosAnioDiv.innerHTML = `<button class="chip activo" data-anio="">Todos</button>` +
+    aniosUnicos.map(a => `<button class="chip" data-anio="${a}">${a}</button>`).join("");
+
+  filtrosAnioDiv.querySelectorAll(".chip").forEach(chip => {
+    chip.addEventListener("click", () => {
+      filtrosAnioDiv.querySelectorAll(".chip").forEach(c => c.classList.remove("activo"));
+      chip.classList.add("activo");
+      anioSeleccionado = chip.dataset.anio;
+      renderPublicaciones();
+    });
+  });
+
+  // Filtro de tipo
+  const tipos = [...new Set(pubs.map(p => p.tipo_documento).filter(Boolean))].sort();
+  const filtroTipo = document.getElementById("filtroTipo");
+  filtroTipo.innerHTML = `<option value="">Todos los tipos</option>` +
+    tipos.map(t => `<option value="${t}">${capitalizarTipo(t)}</option>`).join("");
+
+  document.getElementById("filtroFuente").value = "";
+
+  // Mostrar sección
+  document.getElementById("estadoInicial").style.display  = "none";
+  document.getElementById("perfilSection").style.display  = "block";
+  document.getElementById("perfilSection").scrollIntoView({ behavior: "smooth", block: "start" });
+
+  renderPublicaciones();
+}
+
+function volverAlInicio() {
+  docenteActual = null;
+  document.getElementById("perfilSection").style.display = "none";
+  document.getElementById("estadoInicial").style.display = "block";
+  document.getElementById("searchInput").value = "";
+  document.getElementById("btnClear").classList.remove("visible");
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+
+// ─────────────────────────────────────────────────────────────
+// FILTROS
+// ─────────────────────────────────────────────────────────────
+
+function configurarFiltros() {
+  document.getElementById("filtroTipo").addEventListener("change", e => {
+    tipoSeleccionado = e.target.value;
+    renderPublicaciones();
+  });
+  document.getElementById("filtroFuente").addEventListener("change", e => {
+    fuenteSeleccionada = e.target.value;
+    renderPublicaciones();
+  });
+}
+
+
+// ─────────────────────────────────────────────────────────────
+// RENDERIZAR PUBLICACIONES
+// ─────────────────────────────────────────────────────────────
+
+function renderPublicaciones() {
+  if (!docenteActual) return;
+  let pubs = [...(docentesMap[docenteActual] || [])];
+
+  // Aplicar filtros
+  if (anioSeleccionado)   pubs = pubs.filter(p => p.anio === anioSeleccionado);
+  if (tipoSeleccionado)   pubs = pubs.filter(p => p.tipo_documento === tipoSeleccionado);
+  if (fuenteSeleccionada === "scopus") pubs = pubs.filter(p => esBool(p.en_scopus));
+  if (fuenteSeleccionada === "wos")    pubs = pubs.filter(p => esBool(p.en_wos));
+  if (fuenteSeleccionada === "oa")     pubs = pubs.filter(p => (p.open_access||"").match(/gold|green/i));
+
+  // Ordenar por año desc, luego citas desc
+  pubs.sort((a, b) => {
+    const anioD = (parseInt(b.anio) || 0) - (parseInt(a.anio) || 0);
+    if (anioD !== 0) return anioD;
+    return (parseInt(b.citas) || 0) - (parseInt(a.citas) || 0);
+  });
+
+  pubFiltradas = pubs;
+
+  // Contador
+  document.getElementById("pubContador").textContent =
+    `${pubs.length} publicación${pubs.length !== 1 ? "es" : ""} encontrada${pubs.length !== 1 ? "s" : ""}`;
+
+  const grid   = document.getElementById("pubGrid");
+  const sinPub = document.getElementById("sinPub");
+
+  if (pubs.length === 0) {
+    grid.innerHTML    = "";
+    sinPub.style.display = "block";
     return;
   }
 
-  tbody.innerHTML = pagina.map((d, i) => {
-    const citas      = parseInt(d.citas) || 0;
-    const citasClass = citas === 0 ? "citas-0" : citas < 5 ? "citas-low" : citas < 20 ? "citas-mid" : "citas-high";
+  sinPub.style.display = "none";
 
-    const enScopus = d.en_scopus === "True" || d.en_scopus === "true" || d.en_scopus === "TRUE";
-    const enWos    = d.en_wos    === "True" || d.en_wos    === "true" || d.en_wos    === "TRUE";
-    const esOA     = d.open_access?.toLowerCase().includes("gold") || d.open_access?.toLowerCase().includes("green");
+  grid.innerHTML = pubs.map((p, i) => {
+    const citas    = parseInt(p.citas) || 0;
+    const enScopus = esBool(p.en_scopus);
+    const enWos    = esBool(p.en_wos);
+    const esOA     = !!(p.open_access||"").match(/gold|green/i);
+    const url      = p.url_doi || p.url_scopus || p.url_wos || "";
+
+    // Color de borde según índice
+    let claseCard = "pub-card solo-api";
+    if (enScopus && enWos) claseCard = "pub-card scopus-wos";
+    else if (enScopus)     claseCard = "pub-card solo-scopus";
+    else if (enWos)        claseCard = "pub-card solo-wos";
 
     const badges = [
       enScopus ? `<span class="badge badge-scopus">Scopus</span>` : "",
       enWos    ? `<span class="badge badge-wos">WoS</span>`       : "",
       esOA     ? `<span class="badge badge-oa">OA</span>`         : "",
-    ].join("");
+    ].filter(Boolean).join("");
 
-    const url   = d.url_doi || d.url_scopus || d.url_wos || "";
-    const titulo = escapar(d.titulo || "Sin título");
-    const enlace = url
-      ? `<a href="${url}" target="_blank" rel="noopener">Ver <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" width="10" height="10"><path d="M1 11L11 1M11 1H4M11 1v7"/></svg></a>`
-      : "—";
+    const tituloHTML = url
+      ? `<a href="${escapar(url)}" target="_blank" rel="noopener">${escapar(p.titulo)}</a>`
+      : escapar(p.titulo);
 
-    const deptCorto = (d.departamento || "").replace("DEPARTAMENTO ACADÉMICO DE ", "");
+    const enlaceHTML = url
+      ? `<a href="${escapar(url)}" target="_blank" rel="noopener" class="card-link">
+           Ver artículo
+           <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" width="10" height="10">
+             <path d="M1 11L11 1M11 1H4M11 1v7"/>
+           </svg>
+         </a>`
+      : "";
 
     return `
-      <tr style="animation-delay:${i * 0.03}s">
-        <td class="td-docente">
-          ${escapar(d.docente || "—")}
-          ${deptCorto ? `<div style="font-size:10px;color:#adb5bd;font-weight:400;margin-top:2px">${escapar(deptCorto)}</div>` : ""}
-        </td>
-        <td class="td-titulo">${titulo}</td>
-        <td class="td-anio">${d.anio || "—"}</td>
-        <td class="td-revista">${escapar(d.revista || "—")}</td>
-        <td style="font-size:11px;color:#6c757d;white-space:nowrap">${capitalizarTipo(d.tipo_documento || "")}</td>
-        <td class="td-citas"><span class="${citasClass}">${citas}</span></td>
-        <td class="td-indices">${badges || '<span style="color:#adb5bd;font-size:11px">—</span>'}</td>
-        <td class="td-link">${enlace}</td>
-      </tr>`;
+      <div class="${claseCard}" style="animation-delay:${i * 0.04}s">
+        <div class="card-header">
+          <span class="card-anio">${p.anio || "—"}</span>
+          <div class="card-badges">${badges}</div>
+        </div>
+        <div class="card-titulo">${tituloHTML}</div>
+        ${p.revista ? `<div class="card-revista">${escapar(p.revista)}</div>` : ""}
+        <div class="card-footer">
+          <div class="card-citas">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" width="13" height="13">
+              <path d="M2 12V4a2 2 0 012-2h8a2 2 0 012 2v5a2 2 0 01-2 2H5l-3 3z"/>
+            </svg>
+            <span class="card-citas-num">${citas}</span>
+            <span style="color:var(--g500)">cita${citas !== 1 ? "s" : ""}</span>
+          </div>
+          <span class="card-tipo">${capitalizarTipo(p.tipo_documento)}</span>
+          ${enlaceHTML}
+        </div>
+      </div>`;
   }).join("");
-}
-
-
-// ─────────────────────────────────────────────────────────────
-// PAGINACIÓN
-// ─────────────────────────────────────────────────────────────
-
-function renderPaginacion() {
-  const total  = Math.ceil(datosFiltros.length / POR_PAGINA);
-  const pagDiv = document.getElementById("paginacion");
-
-  if (total <= 1) { pagDiv.innerHTML = ""; return; }
-
-  let html = "";
-
-  // Anterior
-  html += `<button class="pag-btn" onclick="irAPagina(${paginaActual - 1})" ${paginaActual === 1 ? "disabled" : ""}>‹</button>`;
-
-  // Páginas
-  const rango = paginasARender(paginaActual, total);
-  let anterior = null;
-  for (const p of rango) {
-    if (anterior !== null && p - anterior > 1) {
-      html += `<button class="pag-btn" disabled>…</button>`;
-    }
-    html += `<button class="pag-btn ${p === paginaActual ? "activo" : ""}" onclick="irAPagina(${p})">${p}</button>`;
-    anterior = p;
-  }
-
-  // Siguiente
-  html += `<button class="pag-btn" onclick="irAPagina(${paginaActual + 1})" ${paginaActual === total ? "disabled" : ""}>›</button>`;
-
-  pagDiv.innerHTML = html;
-}
-
-function paginasARender(actual, total) {
-  const paginas = new Set([1, total, actual]);
-  for (let i = Math.max(1, actual - 2); i <= Math.min(total, actual + 2); i++) paginas.add(i);
-  return [...paginas].sort((a, b) => a - b);
-}
-
-function irAPagina(p) {
-  const total = Math.ceil(datosFiltros.length / POR_PAGINA);
-  if (p < 1 || p > total) return;
-  paginaActual = p;
-  renderTabla();
-  renderPaginacion();
-  document.getElementById("publicaciones").scrollIntoView({ behavior: "smooth", block: "start" });
-}
-
-
-// ─────────────────────────────────────────────────────────────
-// EXPORTAR CSV
-// ─────────────────────────────────────────────────────────────
-
-function exportarCSV() {
-  const cols    = ["docente", "departamento", "titulo", "anio", "revista", "tipo_documento", "doi", "citas", "en_scopus", "en_wos", "open_access", "fuentes", "url_doi"];
-  const headers = ["Docente", "Departamento", "Título", "Año", "Revista", "Tipo", "DOI", "Citas", "En Scopus", "En WoS", "Acceso Abierto", "Fuentes", "URL"];
-
-  const filas = [headers, ...datosFiltros.map(d => cols.map(c => {
-    const v = String(d[c] || "").replace(/"/g, '""');
-    return v.includes(",") || v.includes('"') || v.includes("\n") ? `"${v}"` : v;
-  }))];
-
-  const csv  = filas.map(f => f.join(",")).join("\n");
-  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement("a");
-  a.href     = url;
-  a.download = `publicaciones-unh-${new Date().toISOString().split("T")[0]}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
 }
 
 
@@ -396,26 +408,51 @@ function exportarCSV() {
 // UTILIDADES
 // ─────────────────────────────────────────────────────────────
 
+function esBool(valor) {
+  return valor === "True" || valor === "true" || valor === "TRUE" || valor === true;
+}
+
+function obtenerIniciales(nombre) {
+  const palabras = nombre.trim().split(/\s+/);
+  if (palabras.length >= 2) {
+    return (palabras[0][0] + palabras[1][0]).toUpperCase();
+  }
+  return nombre.substring(0, 2).toUpperCase();
+}
+
 function escapar(str) {
   return String(str)
-    .replace(/&/g,  "&amp;")
-    .replace(/</g,  "&lt;")
-    .replace(/>/g,  "&gt;")
-    .replace(/"/g,  "&quot;");
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
 
 function capitalizarTipo(tipo) {
   if (!tipo) return "";
   const mapa = {
-    "journal-article": "Artículo",
-    "article":         "Artículo",
-    "book-chapter":    "Capítulo",
-    "book":            "Libro",
-    "proceedings-article": "Conferencia",
-    "review":          "Revisión",
-    "report":          "Reporte",
-    "dataset":         "Dataset",
-    "thesis":          "Tesis",
+    "journal-article":      "Artículo",
+    "article":              "Artículo",
+    "book-chapter":         "Capítulo de libro",
+    "book":                 "Libro",
+    "proceedings-article":  "Conferencia",
+    "review":               "Revisión",
+    "report":               "Reporte",
+    "dataset":              "Dataset",
+    "thesis":               "Tesis",
   };
   return mapa[tipo.toLowerCase()] || tipo.charAt(0).toUpperCase() + tipo.slice(1).toLowerCase();
+}
+
+function animarNum(id, final) {
+  const el  = document.getElementById(id);
+  const dur = 800;
+  const t0  = performance.now();
+  function step(now) {
+    const t    = Math.min((now - t0) / dur, 1);
+    const ease = 1 - Math.pow(1 - t, 3);
+    el.textContent = Math.round(ease * final).toLocaleString("es-PE");
+    if (t < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
 }
