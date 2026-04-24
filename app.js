@@ -386,14 +386,40 @@ function renderPublicaciones() {
          </a>`
       : "";
 
+    // Autores: mostrar máximo 3 y luego "et al."
+    const autoresRaw = (p.autores || "").trim();
+    let autoresHTML  = "";
+    if (autoresRaw) {
+      const lista = autoresRaw.split(";").map(a => a.trim()).filter(Boolean);
+      const mostrar = lista.slice(0, 3).join("; ");
+      autoresHTML = lista.length > 3 ? `${mostrar} <em>et al.</em>` : mostrar;
+    }
+
+    // Tema principal
+    const temaHTML = p.tema_principal
+      ? `<span class="card-tema">${escapar(p.tema_principal)}</span>`
+      : "";
+
+    // WoS index
+    const wosIdxHTML = p.wos_index
+      ? `<span class="card-wos-idx">${escapar(p.wos_index)}</span>`
+      : "";
+
+    // Idioma
+    const idiomaHTML = p.idioma
+      ? `<span class="card-idioma">${escapar(p.idioma.toUpperCase().slice(0,2))}</span>`
+      : "";
+
     return `
       <div class="${claseCard}" style="animation-delay:${i * 0.04}s">
         <div class="card-header">
           <span class="card-anio">${p.anio || "—"}</span>
-          <div class="card-badges">${badges}</div>
+          <div class="card-badges">${badges}${idiomaHTML}</div>
         </div>
         <div class="card-titulo">${tituloHTML}</div>
+        ${autoresRaw ? `<div class="card-autores">${autoresHTML}</div>` : ""}
         ${p.revista ? `<div class="card-revista"><span class="card-revista-label">Revista:</span> ${escapar(p.revista)}</div>` : ""}
+        ${(temaHTML || wosIdxHTML) ? `<div class="card-meta-row">${temaHTML}${wosIdxHTML}</div>` : ""}
         <div class="card-footer">
           <div class="card-citas">
             <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" width="13" height="13">
