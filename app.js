@@ -262,7 +262,8 @@ function mostrarDocente(nombre) {
   const citas    = pubsReales.reduce((s, p) => s + (parseInt(p.citas) || 0), 0);
   const enOA     = pubsReales.filter(p => (p.open_access||"").match(/gold|green/i)).length;
   const enScielo = pubsReales.filter(p => esBool(p.en_scielo)).length;
-  const anios    = [...new Set(pubsReales.map(p => p.anio).filter(Boolean))].sort();
+  const anios    = [...new Set(pubsReales.map(p => limpiarAnio(p.anio)).filter(a => a && a !== "—"))]
+    .sort((a, b) => (parseInt(a, 10) || 0) - (parseInt(b, 10) || 0));
   const rangoAnios = anios.length > 1 ? `${anios[0]}–${anios[anios.length-1]}` : anios[0] || "—";
 
   animarNum("dTotal",  pubsReales.length);
@@ -279,7 +280,8 @@ function mostrarDocente(nombre) {
   tipoSeleccionado  = "";
   fuenteSeleccionada= "";
 
-  const aniosUnicos = [...new Set(pubsReales.map(p => p.anio).filter(Boolean))].sort((a,b) => b - a);
+  const aniosUnicos = [...new Set(pubsReales.map(p => limpiarAnio(p.anio)).filter(a => a && a !== "—"))]
+    .sort((a, b) => (parseInt(b, 10) || 0) - (parseInt(a, 10) || 0));
   filtrosAnioDiv.innerHTML = `<button class="chip activo" data-anio="">Todos</button>` +
     aniosUnicos.map(a => `<button class="chip" data-anio="${a}">${a}</button>`).join("");
 
@@ -397,7 +399,8 @@ function obtenerResumenDocente(nombre) {
   const enWos = pubs.filter(p => esBool(p.en_wos)).length;
   const citas = pubs.reduce((sum, p) => sum + (parseInt(p.citas, 10) || 0), 0);
   const oa = pubs.filter(p => (p.open_access || "").match(/gold|green/i)).length;
-  const anios = [...new Set(pubs.map(p => p.anio).filter(Boolean))].sort();
+  const anios = [...new Set(pubs.map(p => limpiarAnio(p.anio)).filter(a => a && a !== "—"))]
+    .sort((a, b) => (parseInt(a, 10) || 0) - (parseInt(b, 10) || 0));
   const rango = anios.length > 1 ? `${anios[0]}–${anios[anios.length - 1]}` : (anios[0] || "—");
 
   const top = pubs
@@ -408,8 +411,8 @@ function obtenerResumenDocente(nombre) {
 
   const porAnioMap = {};
   pubs.forEach(p => {
-    const y = (p.anio || "").trim();
-    if (!y) return;
+    const y = limpiarAnio(p.anio);
+    if (!y || y === "—") return;
     porAnioMap[y] = (porAnioMap[y] || 0) + 1;
   });
   const porAnio = Object.keys(porAnioMap)
@@ -446,7 +449,7 @@ function renderComparacion(nombreA, nombreB) {
             <div class="comparar-anio-vbar-wrap">
               <div class="comparar-anio-vbar" style="height:${heightPct}%"></div>
             </div>
-            <span class="comparar-anio-vlabel">${escapar(item.anio)}</span>
+            <span class="comparar-anio-vlabel">${escapar(limpiarAnio(item.anio))}</span>
           </div>`;
       })
       .join("");
@@ -529,7 +532,7 @@ function renderPublicaciones() {
   }
 
   // Aplicar filtros
-  if (anioSeleccionado)   pubs = pubs.filter(p => p.anio === anioSeleccionado);
+  if (anioSeleccionado)   pubs = pubs.filter(p => limpiarAnio(p.anio) === anioSeleccionado);
   if (tipoSeleccionado)   pubs = pubs.filter(p => p.tipo_documento === tipoSeleccionado);
   if (fuenteSeleccionada === "scopus") pubs = pubs.filter(p => esBool(p.en_scopus));
   if (fuenteSeleccionada === "wos")    pubs = pubs.filter(p => esBool(p.en_wos));
@@ -606,12 +609,19 @@ function renderPublicaciones() {
     if (autoresRaw) {
       const lista   = autoresRaw.split(";").map(a => a.trim()).filter(Boolean);
       const cardId  = `autores-${i}`;
+      const listaMarcada = lista.map(autor => {
+        if (esAutorDelDocente(autor, docenteActual)) {
+          return `<span class="autor-docente">${escapar(autor)}</span>`;
+        }
+        return escapar(autor);
+      });
+
       if (lista.length > 3) {
-        const visibles = lista.slice(0, 3).join("; ");
-        const todos    = lista.join("; ");
-        autoresHTML = `<span class="autores-corto" id="${cardId}-corto">${escapar(visibles)}</span><span class="autores-largo" id="${cardId}-largo" style="display:none">${escapar(todos)}</span> <button class="btn-ver-mas" onclick="toggleAutores('${cardId}')">ver más</button>`;
+        const visibles = listaMarcada.slice(0, 3).join("; ");
+        const todos    = listaMarcada.join("; ");
+        autoresHTML = `<span class="autores-corto" id="${cardId}-corto">${visibles}</span><span class="autores-largo" id="${cardId}-largo" style="display:none">${todos}</span> <button class="btn-ver-mas" onclick="toggleAutores('${cardId}')">ver más</button>`;
       } else {
-        autoresHTML = lista.join("; ");
+        autoresHTML = listaMarcada.join("; ");
       }
     }
 
@@ -633,7 +643,7 @@ function renderPublicaciones() {
     return `
       <div class="${claseCard}" style="animation-delay:${i * 0.04}s">
         <div class="card-header">
-          <span class="card-anio">${p.anio || "—"}</span>
+          <span class="card-anio">${limpiarAnio(p.anio)}</span>
           <div class="card-badges">${badges}${idiomaHTML}</div>
         </div>
         <div class="card-titulo">${tituloHTML}</div>
@@ -662,6 +672,36 @@ function renderPublicaciones() {
 
 function esBool(valor) {
   return valor === "True" || valor === "true" || valor === "TRUE" || valor === true;
+}
+
+function esAutorDelDocente(nombreAutor, nombreDocente) {
+  const autor = normalizarTexto(nombreAutor);
+  const docente = normalizarTexto(nombreDocente);
+  if (!autor || !docente) return false;
+
+  if (autor === docente || autor.includes(docente) || docente.includes(autor)) {
+    return true;
+  }
+
+  const tokensDocente = docente.split(" ").filter(t => t.length > 2);
+  if (!tokensDocente.length) return false;
+  const coincidencias = tokensDocente.filter(t => autor.includes(t)).length;
+  return coincidencias >= Math.min(2, tokensDocente.length);
+}
+
+function normalizarTexto(texto) {
+  return String(texto || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function limpiarAnio(anio) {
+  if (!anio) return "—";
+  return String(anio).replace(".0", "").trim();
 }
 
 function toggleAutores(id) {
