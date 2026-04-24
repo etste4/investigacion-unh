@@ -404,17 +404,49 @@ function obtenerResumenDocente(nombre) {
     .slice(0, 5)
     .map(p => ({ titulo: p.titulo || "Sin título", citas: parseInt(p.citas, 10) || 0 }));
 
-  return { nombre, total, enScopus, enWos, citas, oa, rango, top };
+  const porAnioMap = {};
+  pubs.forEach(p => {
+    const y = (p.anio || "").trim();
+    if (!y) return;
+    porAnioMap[y] = (porAnioMap[y] || 0) + 1;
+  });
+  const porAnio = Object.keys(porAnioMap)
+    .sort((a, b) => (parseInt(a, 10) || 0) - (parseInt(b, 10) || 0))
+    .map(y => ({ anio: y, total: porAnioMap[y] }));
+
+  return { nombre, total, enScopus, enWos, citas, oa, rango, top, porAnio };
 }
 
 function renderComparacion(nombreA, nombreB) {
   const a = obtenerResumenDocente(nombreA);
   const b = obtenerResumenDocente(nombreB);
+  const maxPorAnio = Math.max(
+    1,
+    ...a.porAnio.map(i => i.total),
+    ...b.porAnio.map(i => i.total)
+  );
 
   const renderTop = (top) => {
     if (!top.length) return `<li>Sin publicaciones para mostrar</li>`;
     return top
       .map(item => `<li>${escapar(item.titulo)} <strong>(${item.citas} citas)</strong></li>`)
+      .join("");
+  };
+
+  const renderPorAnio = (series) => {
+    if (!series.length) return `<div class="comparar-empty">Sin datos de año</div>`;
+    return series
+      .map(item => {
+        const widthPct = Math.max(8, Math.round((item.total / maxPorAnio) * 100));
+        return `
+          <div class="comparar-anio-row">
+            <span class="comparar-anio-label">${escapar(item.anio)}</span>
+            <div class="comparar-anio-bar-wrap">
+              <div class="comparar-anio-bar" style="width:${widthPct}%"></div>
+            </div>
+            <span class="comparar-anio-num">${item.total}</span>
+          </div>`;
+      })
       .join("");
   };
 
@@ -429,6 +461,8 @@ function renderComparacion(nombreA, nombreB) {
         <div class="comparar-kpi"><div class="comparar-kpi-num">${r.oa}</div><div class="comparar-kpi-label">Acceso abierto</div></div>
         <div class="comparar-kpi"><div class="comparar-kpi-num">${escapar(r.rango)}</div><div class="comparar-kpi-label">Rango años</div></div>
       </div>
+      <div class="comparar-top-title">Publicaciones por año</div>
+      <div class="comparar-anio-chart">${renderPorAnio(r.porAnio)}</div>
       <div class="comparar-top-title">Top 5 publicaciones con más citas</div>
       <ol class="comparar-top-list">${renderTop(r.top)}</ol>
     </article>`;

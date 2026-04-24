@@ -157,6 +157,12 @@ body{font-family:'Poppins',sans-serif;color:var(--texto);background:var(--g100);
 .comparar-kpi-num{font-size:16px;font-weight:800;color:var(--oscuro);line-height:1}
 .comparar-kpi-label{font-size:10px;color:var(--g500);text-transform:uppercase;letter-spacing:.35px;margin-top:3px}
 .comparar-top-title{font-size:11px;font-weight:700;color:var(--g700);margin-bottom:6px}
+.comparar-anio-chart{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
+.comparar-anio-row{display:grid;grid-template-columns:44px 1fr 28px;align-items:center;gap:8px}
+.comparar-anio-label{font-size:10px;font-weight:600;color:var(--g700)}
+.comparar-anio-bar-wrap{height:8px;background:var(--g200);border-radius:999px;overflow:hidden}
+.comparar-anio-bar{height:100%;background:linear-gradient(90deg,var(--azul) 0%, #4d8ad8 100%);border-radius:999px}
+.comparar-anio-num{font-size:10px;font-weight:700;color:var(--oscuro);text-align:right}
 .comparar-top-list{margin:0;padding-left:16px;display:flex;flex-direction:column;gap:4px}
 .comparar-top-list li{font-size:11px;color:var(--g700);line-height:1.4}
 .comparar-empty{color:#a33;font-weight:600}
