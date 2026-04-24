@@ -8,6 +8,7 @@ const SHEETS_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTnX1PTEE3CA
 let todosLosDatos     = [];   // todas las publicaciones
 let docentesMap       = {};   // { nombre: [publicaciones] }
 let docenteActual     = null;
+let docenteComparado  = null;
 let pubFiltradas      = [];
 let anioSeleccionado  = "";
 let tipoSeleccionado  = "";
@@ -22,6 +23,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   await cargarDatos();
   configurarBuscador();
   configurarFiltros();
+  configurarComparacion();
   document.getElementById("btnVolver").addEventListener("click", volverAlInicio);
 });
 
@@ -236,6 +238,7 @@ function resaltarCoincidencia(texto, q) {
 
 function mostrarDocente(nombre) {
   docenteActual = nombre;
+  docenteComparado = null;
   const pubs    = docentesMap[nombre] || [];
 
   if (pubs.length === 0) return;
@@ -295,6 +298,13 @@ function mostrarDocente(nombre) {
 
   document.getElementById("filtroFuente").value = "";
 
+  const compararResultado = document.getElementById("compararResultado");
+  const compararInput = document.getElementById("compararInput");
+  if (compararResultado) {
+    compararResultado.innerHTML = "Selecciona un segundo docente para comparar métricas y publicaciones destacadas.";
+  }
+  if (compararInput) compararInput.value = "";
+
   // Mostrar sección
   document.getElementById("estadoInicial").style.display  = "none";
   document.getElementById("perfilSection").style.display  = "block";
@@ -305,11 +315,111 @@ function mostrarDocente(nombre) {
 
 function volverAlInicio() {
   docenteActual = null;
+  docenteComparado = null;
   document.getElementById("perfilSection").style.display = "none";
   document.getElementById("estadoInicial").style.display = "block";
   document.getElementById("searchInput").value = "";
   document.getElementById("btnClear").classList.remove("visible");
+  const compararPanel = document.getElementById("compararPanel");
+  if (compararPanel) compararPanel.style.display = "none";
   window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function configurarComparacion() {
+  const btnComparar = document.getElementById("btnComparar");
+  const btnCerrar = document.getElementById("btnCerrarComparar");
+  const btnAplicar = document.getElementById("btnAplicarComparar");
+  const panel = document.getElementById("compararPanel");
+  const lista = document.getElementById("listaDocentesComparar");
+  const input = document.getElementById("compararInput");
+
+  if (!btnComparar || !btnCerrar || !btnAplicar || !panel || !lista || !input) return;
+
+  btnComparar.addEventListener("click", () => {
+    const abrir = panel.style.display === "none" || panel.style.display === "";
+    if (abrir) {
+      const docentes = Object.keys(docentesMap).sort((a, b) => a.localeCompare(b));
+      lista.innerHTML = docentes.map(n => `<option value="${escapar(n)}"></option>`).join("");
+      panel.style.display = "block";
+      input.focus();
+      return;
+    }
+    panel.style.display = "none";
+  });
+
+  btnCerrar.addEventListener("click", () => {
+    panel.style.display = "none";
+  });
+
+  btnAplicar.addEventListener("click", () => {
+    if (!docenteActual) return;
+    const nombreB = input.value.trim();
+    if (!nombreB || !docentesMap[nombreB]) {
+      document.getElementById("compararResultado").innerHTML =
+        `<div class="comparar-empty">No se encontró el docente seleccionado. Elige un nombre válido de la lista.</div>`;
+      return;
+    }
+    if (nombreB === docenteActual) {
+      document.getElementById("compararResultado").innerHTML =
+        `<div class="comparar-empty">Selecciona un docente distinto para comparar.</div>`;
+      return;
+    }
+
+    docenteComparado = nombreB;
+    renderComparacion(docenteActual, docenteComparado);
+  });
+}
+
+function obtenerResumenDocente(nombre) {
+  const pubs = [...(docentesMap[nombre] || [])];
+  const total = pubs.length;
+  const enScopus = pubs.filter(p => esBool(p.en_scopus)).length;
+  const enWos = pubs.filter(p => esBool(p.en_wos)).length;
+  const citas = pubs.reduce((sum, p) => sum + (parseInt(p.citas, 10) || 0), 0);
+  const oa = pubs.filter(p => (p.open_access || "").match(/gold|green/i)).length;
+  const anios = [...new Set(pubs.map(p => p.anio).filter(Boolean))].sort();
+  const rango = anios.length > 1 ? `${anios[0]}–${anios[anios.length - 1]}` : (anios[0] || "—");
+
+  const top = pubs
+    .slice()
+    .sort((a, b) => (parseInt(b.citas, 10) || 0) - (parseInt(a.citas, 10) || 0))
+    .slice(0, 5)
+    .map(p => ({ titulo: p.titulo || "Sin título", citas: parseInt(p.citas, 10) || 0 }));
+
+  return { nombre, total, enScopus, enWos, citas, oa, rango, top };
+}
+
+function renderComparacion(nombreA, nombreB) {
+  const a = obtenerResumenDocente(nombreA);
+  const b = obtenerResumenDocente(nombreB);
+
+  const renderTop = (top) => {
+    if (!top.length) return `<li>Sin publicaciones para mostrar</li>`;
+    return top
+      .map(item => `<li>${escapar(item.titulo)} <strong>(${item.citas} citas)</strong></li>`)
+      .join("");
+  };
+
+  const col = (r) => `
+    <article class="comparar-col">
+      <div class="comparar-nombre">${escapar(r.nombre)}</div>
+      <div class="comparar-kpis">
+        <div class="comparar-kpi"><div class="comparar-kpi-num">${r.total}</div><div class="comparar-kpi-label">Publicaciones</div></div>
+        <div class="comparar-kpi"><div class="comparar-kpi-num">${r.citas}</div><div class="comparar-kpi-label">Citas</div></div>
+        <div class="comparar-kpi"><div class="comparar-kpi-num">${r.enScopus}</div><div class="comparar-kpi-label">En Scopus</div></div>
+        <div class="comparar-kpi"><div class="comparar-kpi-num">${r.enWos}</div><div class="comparar-kpi-label">En WoS</div></div>
+        <div class="comparar-kpi"><div class="comparar-kpi-num">${r.oa}</div><div class="comparar-kpi-label">Acceso abierto</div></div>
+        <div class="comparar-kpi"><div class="comparar-kpi-num">${escapar(r.rango)}</div><div class="comparar-kpi-label">Rango años</div></div>
+      </div>
+      <div class="comparar-top-title">Top 5 publicaciones con más citas</div>
+      <ol class="comparar-top-list">${renderTop(r.top)}</ol>
+    </article>`;
+
+  document.getElementById("compararResultado").innerHTML = `
+    <div class="comparar-grid">
+      ${col(a)}
+      ${col(b)}
+    </div>`;
 }
 
 

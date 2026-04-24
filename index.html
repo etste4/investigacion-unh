@@ -88,6 +88,7 @@
           <div class="perfil-dept" id="perfilDept"></div>
           <div class="perfil-orcid" id="perfilOrcid"></div>
         </div>
+        <button class="btn-comparar" id="btnComparar">Comparar docente</button>
         <button class="btn-volver" id="btnVolver">
           <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
             <path d="M15 10H5M9 6l-4 4 4 4"/>
@@ -95,6 +96,24 @@
           Nueva búsqueda
         </button>
       </div>
+
+      <section class="comparar-panel" id="compararPanel" style="display:none" aria-live="polite">
+        <div class="comparar-header">
+          <h3>Comparar docentes</h3>
+          <button class="btn-cerrar-comparar" id="btnCerrarComparar" type="button" aria-label="Cerrar comparacion">Cerrar</button>
+        </div>
+        <div class="comparar-controls">
+          <div class="comparar-campo">
+            <label for="compararInput">Segundo docente</label>
+            <input id="compararInput" type="search" list="listaDocentesComparar" placeholder="Escribe o selecciona un docente..." autocomplete="off">
+            <datalist id="listaDocentesComparar"></datalist>
+          </div>
+          <button class="btn-aplicar-comparar" id="btnAplicarComparar" type="button">Ver comparación</button>
+        </div>
+        <div class="comparar-resultado" id="compararResultado">
+          Selecciona un segundo docente para comparar métricas y publicaciones destacadas.
+        </div>
+      </section>
 
       <div class="dashboard-grid">
         <div class="dash-card">
