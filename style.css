@@ -223,6 +223,15 @@ body{font-family:'Poppins',sans-serif;color:var(--texto);background:var(--g100);
 .badge-openalex{background:#f3e5f5;color:#6a1b9a}
 .badge-crossref{background:#fff8e1;color:#f57f17}
 .badge-oa{background:#e8f5e9;color:#2e7d32}
+.badge-warning {
+  background: #fff8e1;
+  color: #f57f17;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: help;
+}
 
 .card-titulo{font-size:13px;font-weight:600;color:var(--oscuro);line-height:1.5}
 .card-titulo a{color:inherit;text-decoration:none}

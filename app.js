@@ -588,6 +588,10 @@ function renderPublicaciones() {
       enOpenAlex ? `<span class="badge badge-openalex">OpenAlex</span>`   : "",
       enCrossref ? `<span class="badge badge-crossref">Crossref</span>`   : "",
       esOA       ? `<span class="badge badge-oa">OA</span>`               : "",
+      esBool(p.verificar_doi) ?
+        `<span class="badge badge-warning"
+         title="Este DOI fue fusionado por similitud de título, verificar manualmente">
+         ⚠ DOI</span>` : "",
     ].filter(Boolean).join("");
 
     const tituloHTML = url
