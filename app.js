@@ -245,12 +245,26 @@ function mostrarDocente(nombre) {
   const primera  = pubs[0];
   const dept     = (primera.departamento || "").replace("DEPARTAMENTO ACADÉMICO DE ", "");
   const orcid    = primera.orcid_docente || "";
+  const condicionRaw = (primera.condicion || "").trim();
+  const condicion = condicionRaw.toUpperCase();
   const iniciales = obtenerIniciales(nombre);
 
   // Perfil
   document.getElementById("perfilAvatar").textContent = iniciales;
   document.getElementById("perfilNombre").textContent = nombre;
   document.getElementById("perfilDept").textContent   = dept || "Docente UNH";
+  const elCondicion = document.getElementById("perfilCondicion");
+  if (elCondicion) {
+    if (!condicionRaw) {
+      elCondicion.innerHTML = "";
+    } else if (condicion === "NOMBRADO") {
+      elCondicion.innerHTML = `<span class="cond-badge cond-nombrado">NOMBRADO</span>`;
+    } else if (condicion === "CONTRATADO") {
+      elCondicion.innerHTML = `<span class="cond-badge cond-contratado">CONTRATADO</span>`;
+    } else {
+      elCondicion.innerHTML = `<span class="cond-badge cond-contratado">${escapar(condicionRaw)}</span>`;
+    }
+  }
   document.getElementById("perfilOrcid").innerHTML    = orcid
     ? `ORCID: <a href="https://orcid.org/${orcid}" target="_blank">${orcid}</a>`
     : "";
@@ -538,6 +552,14 @@ function renderPublicaciones() {
   if (fuenteSeleccionada === "wos")    pubs = pubs.filter(p => esBool(p.en_wos));
   if (fuenteSeleccionada === "scielo") pubs = pubs.filter(p => esBool(p.en_scielo));
   if (fuenteSeleccionada === "oa")     pubs = pubs.filter(p => (p.open_access||"").match(/gold|green/i));
+  if (fuenteSeleccionada === "revista_unh")
+    pubs = pubs.filter(p => p.afiliacion_unh === "revista_unh");
+
+  if (fuenteSeleccionada === "afil_unh")
+    pubs = pubs.filter(p =>
+      p.afiliacion_unh === "True" || p.afiliacion_unh === true ||
+      p.afiliacion_unh === "revista_unh"
+    );
 
   // Ordenar por año desc, luego citas desc
   pubs.sort((a, b) => {
@@ -580,6 +602,8 @@ function renderPublicaciones() {
     const fuentes    = (p.fuentes || "").toLowerCase();
     const enOpenAlex  = fuentes.includes("openalex");
     const enCrossref  = fuentes.includes("crossref");
+    const afilRaw = p.afiliacion_unh;
+    const afilTexto = String(afilRaw ?? "").trim();
 
     const badges = [
       enScopus   ? `<span class="badge badge-scopus"><img src="assets/scopus.png" alt="" class="badge-logo">Scopus</span>` : "",
@@ -588,6 +612,9 @@ function renderPublicaciones() {
       enOpenAlex ? `<span class="badge badge-openalex">OpenAlex</span>`   : "",
       enCrossref ? `<span class="badge badge-crossref">Crossref</span>`   : "",
       esOA       ? `<span class="badge badge-oa">OA</span>`               : "",
+      afilTexto === "revista_unh" ? `<span class="badge badge-revista-unh">Revista UNH</span>` : "",
+      (afilRaw === true || afilTexto === "True") ? `<span class="badge badge-afil-unh">Afiliación UNH ✓</span>` : "",
+      (afilRaw === false || afilTexto === "False") ? `<span class="badge badge-afil-verificar">⚠ Verificar afiliación</span>` : "",
       esBool(p.verificar_doi) ?
         `<span class="badge badge-warning"
          title="Este DOI fue fusionado por similitud de título, verificar manualmente">

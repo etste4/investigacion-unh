@@ -122,6 +122,10 @@ body{font-family:'Poppins',sans-serif;color:var(--texto);background:var(--g100);
 .perfil-info{flex:1;min-width:200px}
 .perfil-nombre{font-size:18px;font-weight:700;color:var(--oscuro);line-height:1.2;margin-bottom:4px}
 .perfil-dept{font-size:12px;color:var(--g700);font-weight:500;margin-bottom:4px}
+.perfil-condicion{min-height:22px;margin-bottom:4px}
+.cond-badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:999px;font-size:10px;font-weight:700;letter-spacing:.35px;text-transform:uppercase}
+.cond-nombrado{background:#1b5e20;color:#fff}
+.cond-contratado{background:#1565c0;color:#fff}
 .perfil-orcid{font-size:11px;color:var(--azul-d)}
 .perfil-orcid a{color:var(--azul-d);text-decoration:none;font-weight:500}
 .perfil-orcid a:hover{text-decoration:underline}
@@ -223,6 +227,33 @@ body{font-family:'Poppins',sans-serif;color:var(--texto);background:var(--g100);
 .badge-openalex{background:#f3e5f5;color:#6a1b9a}
 .badge-crossref{background:#fff8e1;color:#f57f17}
 .badge-oa{background:#e8f5e9;color:#2e7d32}
+.badge-revista-unh {
+  background: #1a237e;
+  color: #ffffff;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.badge-afil-unh {
+  background: #e8f5e9;
+  color: #1b5e20;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.badge-afil-verificar {
+  background: #fff8e1;
+  color: #f57f17;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: help;
+}
 .badge-warning {
   background: #fff8e1;
   color: #f57f17;
