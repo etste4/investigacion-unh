@@ -604,6 +604,7 @@ function renderPublicaciones() {
     const enCrossref  = fuentes.includes("crossref");
     const afilRaw = p.afiliacion_unh;
     const afilTexto = String(afilRaw ?? "").trim();
+    const afilLower = afilTexto.toLowerCase();
 
     const badges = [
       enScopus   ? `<span class="badge badge-scopus"><img src="assets/scopus.png" alt="" class="badge-logo">Scopus</span>` : "",
@@ -615,6 +616,11 @@ function renderPublicaciones() {
       afilTexto === "revista_unh" ? `<span class="badge badge-revista-unh">Revista UNH</span>` : "",
       (afilRaw === true || afilTexto === "True") ? `<span class="badge badge-afil-unh">Afiliación UNH ✓</span>` : "",
       (afilRaw === false || afilTexto === "False") ? `<span class="badge badge-afil-verificar">⚠ Verificar afiliación</span>` : "",
+      (!afilTexto || afilLower === "none" || afilLower === "null") ?
+        `<span class="badge badge-afil-none" 
+          title="La fuente no registró datos de afiliación">
+          Sin afiliación registrada
+        </span>` : "",
       esBool(p.verificar_doi) ?
         `<span class="badge badge-warning"
          title="Este DOI fue fusionado por similitud de título, verificar manualmente">
